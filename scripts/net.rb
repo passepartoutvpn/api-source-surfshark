@@ -8,8 +8,8 @@ load "util.rb"
 
 ###
 
-servers = File.read("../static/clusters.json")
-ca = File.read("../static/ca.crt")
+servers = File.read("../static/servers.json")
+ca = File.read("../static/ca.pem")
 tls_wrap = read_tls_wrap("auth", 1, "../static/ta.key", 4)
 
 cfg = {
