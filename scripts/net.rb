@@ -8,37 +8,45 @@ load "util.rb"
 
 ###
 
-ca = File.read("../static/ca.pem")
+servers = File.read("../static/clusters.json")
+ca = File.read("../static/ca.crt")
 tls_wrap = read_tls_wrap("auth", 1, "../static/ta.key", 4)
-countries = ["US", "FR", "DE", "ES", "IT"]
-bogus_ip_prefix = "1.2.3"
 
 cfg = {
-    ep: [
-        "UDP:1194",
-        "TCP:443",
-    ],
-    frame: 1,
-    ping: 60,
-    reneg: 3600
+    ca: ca,
+    wrap: tls_wrap,
+    cipher: "AES-256-CBC",
+    auth: "SHA512",
+    frame: 0,
+    ping: 15,
+    pingTimeout: 60,
+    reneg: 0,
+    eku: true
+}
+
+external = {
+  hostname: "${id}.prod.surfshark.com"
 }
 
 recommended_cfg = cfg.dup
-recommended_cfg["ca"] = ca
-recommended_cfg["cipher"] = "AES-128-GCM"
-recommended_cfg["auth"] = "SHA1"
-recommended_cfg["wrap"] = tls_wrap
-
+recommended_cfg["ep"] = [
+    "UDP:1194",
+    "TCP:1443"
+]
 recommended = {
     id: "default",
     name: "Default",
-    comment: "128-bit encryption",
-    cfg: recommended_cfg
+    comment: "256-bit encryption",
+    cfg: recommended_cfg,
+    external: external
 }
-presets = [recommended]
+
+presets = [
+    recommended
+]
 
 defaults = {
-    :username => "myusername",
+    :username => "4HJbkSABosB028",
     :pool => "us",
     :preset => "default"
 }
@@ -46,34 +54,34 @@ defaults = {
 ###
 
 pools = []
-countries.each { |k|
-    id = k.downcase
-    hostname = "#{id}.sample-vpn-provider.bogus"
 
-    addresses = nil
-    if ARGV.length > 0 && ARGV[0] == "noresolv"
+json = JSON.parse(servers)
+json.each { |country|
+    hostname = country["connectionName"]
+    id = hostname.split(".").first
+    code = country["countryCode"].upcase
+    area = country["location"]
+
+	addresses = nil
+    if ARGV.include? "noresolv"
         addresses = []
+        #addresses = ["1.2.3.4"]
     else
-        #addresses = Resolv.getaddresses(hostname)
-        addresses = []
-        octet = 1
-        5.times {
-            ip = "#{bogus_ip_prefix}.#{octet}"
-            addresses << ip
-            octet += 1
-        }
+        addresses = Resolv.getaddresses(hostname)
     end
     addresses.map! { |a|
         IPAddr.new(a).to_i
     }
 
+    # cluster = country["transitCluster"]
+
     pool = {
         :id => id,
-        :name => "Sample #{k}",
-        :country => k,
+        :country => code,
         :hostname => hostname,
         :addrs => addresses
     }
+    pool[:area] = area if !area.empty?
     pools << pool
 }
 
