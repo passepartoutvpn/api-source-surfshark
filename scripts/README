@@ -1,0 +1,86 @@
+Your "scraping" logic should go here.
+
+The output JSON must follow this format:
+
+{
+    "pools": [...],     // list of pools
+    "presets": [...],   // list of presets
+    "defaults": {...}   // map of default values
+}
+
+Types with a trailing ? are optional.
+
+Pool:
+
+{
+    "category": String?             // the pool category (default category if null)
+    "id": String,                   // unique pool identifier across hole infrastructure
+    "country": String,              // country code (uppercase)
+    "extra_countries": [String]?,   // additional country codes if applicable (uppercase)
+    "area": String?,                // geographic area
+    "num": Int?,                    // server numeric index
+    "hostname": String?,            // server hostname
+    "resolved": Bool?,              // true if server has no hostname (not even if externally set)
+    "addrs": [Int]?                 // pre-resolved IPv4 addresses (32-bit)
+}
+
+Preset:
+
+{
+    "id": String,                   // unique preset identifier
+    "name": String,                 // English name for the preset
+    "comment": String,              // short description
+    "cfg": Configuration,           // an object representing an OpenVPN configuration (see below)
+    "external": External?           // map of patterns for dynamically inferred parameters (see below)
+}
+
+Configuration:
+
+{
+    "ep": [String],                 // list of endpoints e.g. "UDP:1198", "TCP:443"
+    "ca": String,                   // PEM-encoded CA
+    "wrap": TLSWrap?,               // the TLS wrapping (see below)
+    "cipher": String?,              // the encryption cipher (AES-###-CBC or AES-###-GCM)
+    "auth": String?,                // the HMAC algorithm (SHA###)
+    "frame": Int?,                  // compression framing (0 = none, 1 = --comp-lzo, 2 = --compress)
+    "compression": Int?,            // compression algorithm (0 = none, 1 = LZO)
+    "client": String?,              // client certificate
+    "key": String?,                 // client certificate key
+    "ping": Int?,                   // keep-alive interval (seconds)
+    "reneg": Int?,                  // renegotiation interval (seconds)
+    "eku": Bool?,                   // enable extended key usage verification
+    "random": Bool?,                // randomize endpoint pick
+    "pia": Bool?                    // servers use PIA patches
+}
+
+TLSWrap:
+
+{
+    "strategy": "auth"|"crypt",     // for --tls-auth or --tls-crypt
+    "key": {
+        "dir": Int,                 // conventionally 1
+        "data": String,             // base64-encoded static OpenVPN key
+    }
+}
+
+External:
+
+{
+    "hostname": String,             // pattern for pool hostname (e.g. "${id}.provider.com" would
+                                    // translate to "de123.provider.com" for pool with id "de123"
+    "ca": String,                   // filename pattern for CA in external resources
+    "wrap_key_data": String         // filename pattern for TLS key in external resources
+}
+
+    External resources are looked up when the corresponding element could not be found in either
+    the Pool ("hostname") or the Configuration ("ca", "wrap":"key":"data"). When this happens,
+    the app tries to dynamically infer the field from the external pattern. If necessary, it may
+    also prompt to download additional files from the provider.
+
+Defaults:
+
+{
+    "username": String,             // placeholder for account username
+    "pool": String,                 // default pool identifier (full match or prefix)
+    "preset": String                // default preset identifier (full match)
+}
