@@ -73,7 +73,11 @@ json.each { |country|
         IPAddr.new(a).to_i
     }
 
-    # cluster = country["transitCluster"]
+    cluster = country["transitCluster"]
+    extraCountry = nil
+    if !cluster.nil?
+        extraCountry = cluster["countryCode"]
+    end
 
     pool = {
         :id => id,
@@ -82,6 +86,10 @@ json.each { |country|
         :addrs => addresses
     }
     pool[:area] = area if !area.empty?
+    if !extraCountry.nil?
+        pool[:category] = "transit"
+        pool[:extra_countries] = [extraCountry.upcase]
+    end
     pools << pool
 }
 
