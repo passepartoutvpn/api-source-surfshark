@@ -85,8 +85,9 @@ json.each { |country|
         :hostname => hostname,
         :addrs => addresses
     }
-    pool[:area] = area if !area.empty?
-    if !extraCountry.nil?
+    if extraCountry.nil?
+        pool[:area] = area if !area.empty?
+    else
         pool[:category] = "transit"
         pool[:extra_countries] = [extraCountry.upcase]
     end
