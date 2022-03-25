@@ -8,98 +8,93 @@ load "util.rb"
 
 ###
 
-servers = File.read("../static/servers.json")
+template = File.read("../static/servers.json")
 ca = File.read("../static/ca.pem")
 tls_wrap = read_tls_wrap("auth", 1, "../static/ta.key", 4)
 
 cfg = {
-    ca: ca,
-    wrap: tls_wrap,
-    cipher: "AES-256-CBC",
-    auth: "SHA512",
-    frame: 0,
-    ping: 15,
-    pingTimeout: 60,
-    reneg: 0,
-    eku: true
+  ca: ca,
+  tlsWrap: tls_wrap,
+  cipher: "AES-256-CBC",
+  digest: "SHA512",
+  compressionFraming: 0,
+  keepAliveSeconds: 15,
+  keepAliveTimeoutSeconds: 60,
+  renegotiatesAfterSeconds: 0,
+  checksEKU: true
 }
 
-external = {
-  hostname: "${id}.prod.surfshark.com"
-}
-
-recommended_cfg = cfg.dup
-recommended_cfg["ep"] = [
-    "UDP:1194",
-    "TCP:1443"
-]
 recommended = {
-    id: "default",
-    name: "Default",
-    comment: "256-bit encryption",
-    cfg: recommended_cfg,
-    external: external
+  id: "default",
+  name: "Default",
+  comment: "256-bit encryption",
+  ovpn: {
+    cfg: cfg,
+    endpoints: [
+      "UDP:1194",
+      "TCP:1443"
+    ]
+  }
 }
 
 presets = [
-    recommended
+  recommended
 ]
 
 defaults = {
-    :username => "4HJbkSABosB028",
-    :pool => "us",
-    :preset => "default"
+  :username => "4HJbkSABosB028",
+  :country => "US"
 }
 
 ###
 
-pools = []
+servers = []
 
-json = JSON.parse(servers)
+json = JSON.parse(template)
 json.each { |country|
-    hostname = country["connectionName"]
-    id = hostname.split(".").first
-    code = country["countryCode"].upcase
-    area = country["location"]
+  hostname = country["connectionName"]
+  id = hostname.split(".").first
+  code = country["countryCode"].upcase
+  area = country["location"]
 
 	addresses = nil
-    if ARGV.include? "noresolv"
-        addresses = []
-        #addresses = ["1.2.3.4"]
-    else
-        addresses = Resolv.getaddresses(hostname)
-    end
-    addresses.map! { |a|
-        IPAddr.new(a).to_i
-    }
+  if ARGV.include? "noresolv"
+    addresses = []
+    #addresses = ["1.2.3.4"]
+  else
+    addresses = Resolv.getaddresses(hostname)
+  end
+  addresses.map! { |a|
+    IPAddr.new(a).to_i
+  }
 
-    cluster = country["transitCluster"]
-    extraCountry = nil
-    if !cluster.nil?
-        extraCountry = cluster["countryCode"]
-    end
+  cluster = country["transitCluster"]
+  extraCountry = nil
+  if !cluster.nil?
+    extraCountry = cluster["countryCode"]
+  end
 
-    pool = {
-        :id => id,
-        :country => code,
-        :hostname => hostname,
-        :addrs => addresses
-    }
-    if extraCountry.nil?
-        pool[:area] = area if !area.empty?
-    else
-        pool[:category] = "transit"
-        pool[:extra_countries] = [extraCountry.upcase]
-    end
-    pools << pool
+  server = {
+    :id => id,
+    :country => code,
+    :hostname => hostname,
+    :addrs => addresses
+  }
+  if extraCountry.nil?
+    server[:area] = area if !area.empty?
+  else
+    server[:category] = "transit"
+    server[:extra_countries] = [extraCountry.upcase]
+  end
+  servers << server
 }
 
 ###
 
 infra = {
-    :pools => pools,
-    :presets => presets,
-    :defaults => defaults
+  :servers => servers,
+  :presets => presets,
+  :defaults => defaults
 }
 
 puts infra.to_json
