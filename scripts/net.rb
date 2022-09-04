@@ -71,6 +71,8 @@ json.each { |country|
   cluster = country["transitCluster"]
   extraCountry = nil
   if !cluster.nil?
+    hostname = cluster["connectionName"]
+    id = hostname.split(".").first
     extraCountry = cluster["countryCode"]
   end
 
