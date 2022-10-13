@@ -1,10 +1,7 @@
 #!/bin/bash
-URL="???"
+URL="https://api.surfshark.com/v3/server/clusters"
 TPL="template"
 SERVERS="$TPL/servers.json"
-
-echo "Static servers bundle"
-exit
 
 echo
 echo "WARNING: Certs must be updated manually!"

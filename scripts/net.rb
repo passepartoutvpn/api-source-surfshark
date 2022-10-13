@@ -8,7 +8,7 @@ load "util.rb"
 
 ###
 
-template = File.read("../static/servers.json")
+template = File.read("../template/servers.json")
 ca = File.read("../static/ca.pem")
 tls_wrap = read_tls_wrap("auth", 1, "../static/ta.key", 4)
 
